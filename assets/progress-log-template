@@ -1,0 +1,19 @@
+# Fortschrittslog Vorlage
+
+```yaml
+progress:
+  document: ""
+  completed_sessions: []
+  current_session: 1
+  confidence_1_to_5: null
+  open_questions: []
+  difficult_terms: []
+  next_recommendation: "Sitzung 1 starten"
+```
+
+## Nach jeder Sitzung beantworten
+
+1. Was war die wichtigste Idee?
+2. Was ist noch unklar?
+3. Welche Begriffe sollen wiederholt werden?
+4. Wie sicher fuehlst du dich auf einer Skala von 1 bis 5?
