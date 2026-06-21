@@ -1,0 +1,8 @@
+interface:
+  display_name: "PDF Hoerbuch Lerncoach DE"
+  short_description: "Macht PDF- und Langdokumente zu gefuehrten Audio-Lerneinheiten."
+  default_prompt: "Verwandle mein hochgeladenes PDF oder langes Dokument in einen Hoersitzungsplan mit Vorleseskript, Zusammenfassung, Erklaerungen und Fortschrittslog."
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  tools: []
