@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""Build a simple audio learning session plan from a JSON outline.
+
+Input JSON example:
+{
+  "document": "Example Manual",
+  "session_minutes": 20,
+  "sections": [
+    {"title": "Introduction", "pages": "1-10", "difficulty": "leicht"}
+  ]
+}
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import sys
+from pathlib import Path
+from typing import Any
+
+
+def load_json(path: str) -> dict[str, Any]:
+    try:
+        if path == '-':
+            return json.load(sys.stdin)
+        return json.loads(Path(path).read_text(encoding='utf-8'))
+    except Exception as exc:
+        raise SystemExit(f'fehler: JSON konnte nicht gelesen werden: {exc}')
+
+
+def normalize_sections(data: dict[str, Any]) -> list[dict[str, Any]]:
+    sections = data.get('sections')
+    if not isinstance(sections, list) or not sections:
+        raise SystemExit('fehler: JSON braucht eine nicht-leere Liste "sections"')
+    normalized: list[dict[str, Any]] = []
+    for idx, item in enumerate(sections, start=1):
+        if not isinstance(item, dict):
+            raise SystemExit(f'fehler: section {idx} ist kein Objekt')
+        title = str(item.get('title') or f'Abschnitt {idx}').strip()
+        pages = str(item.get('pages') or '').strip()
+        difficulty = str(item.get('difficulty') or 'mittel').strip()
+        minutes = int(item.get('minutes') or data.get('session_minutes') or 20)
+        chunks = max(1, math.ceil(minutes / max(1, int(data.get('session_minutes') or 20))))
+        normalized.append({
+            'title': title,
+            'pages': pages,
+            'difficulty': difficulty,
+            'minutes': minutes,
+            'chunks': chunks,
+        })
+    return normalized
+
+
+def render_plan(data: dict[str, Any]) -> str:
+    document = str(data.get('document') or 'Unbenanntes Dokument')
+    target_minutes = int(data.get('session_minutes') or 20)
+    sections = normalize_sections(data)
+    lines = [
+        f'# Hoersitzungsplan: {document}',
+        '',
+        f'Ziel-Laenge je Sitzung: {target_minutes} Minuten',
+        '',
+        '| Sitzung | Titel | Quelle | Ziel | Dauer | Schwierigkeit |',
+        '|---:|---|---|---|---:|---|',
+    ]
+    session = 1
+    for section in sections:
+        for chunk in range(1, section['chunks'] + 1):
+            suffix = '' if section['chunks'] == 1 else f' - Teil {chunk}'
+            title = f"{section['title']}{suffix}"
+            goal = f"Die Kernideen von {section['title']} verstehen und auditiv wiedergeben."
+            lines.append(
+                f"| {session} | {title} | {section['pages'] or '-'} | {goal} | {target_minutes} | {section['difficulty']} |"
+            )
+            session += 1
+    lines += [
+        '',
+        '## Naechster Schritt',
+        '',
+        'Starte mit Sitzung 1: Orientierung, Vorwissen, Vorleseskript, kurze Pause, Zusammenfassung und drei Checkfragen.',
+    ]
+    return '\n'.join(lines) + '\n'
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description='Hoersitzungsplan aus JSON-Outline erstellen')
+    parser.add_argument('input', help='Pfad zur JSON-Datei oder - fuer stdin')
+    parser.add_argument('--out', help='Optionaler Markdown-Ausgabepfad')
+    args = parser.parse_args()
+    data = load_json(args.input)
+    plan = render_plan(data)
+    if args.out:
+        Path(args.out).write_text(plan, encoding='utf-8')
+    else:
+        print(plan, end='')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
